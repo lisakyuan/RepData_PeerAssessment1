@@ -1,25 +1,191 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "PA1_template.RMD"
+author: "Lisa Yuan"
+date: "February 4, 2016"
+output: html_document
 ---
+## Introduction
+This project makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals throughout the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
+
+The data for this assignment can be downloaded from the course web site:
+
+Dataset: [Activity monitoring data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip)
+
+The variables included in this dataset are:
+
+steps: Number of steps taking in a 5-minute interval (missing values are coded as NA)
+date: The date on which the measurement was taken in YYYY-MM-DD format
+interval: Identifier for the 5-minute interval in which measurement was taken
+
+The dataset is stored in a comma-separated-value (CSV) file and there are a total of 17,568 observations in this dataset.
+
+## Analysis
+### Loading and processing data
+
+```{r}
+# extract zip file
+file_name <- "activity.zip"
+
+if(!file.exists("activity.text")) {
+  unzip(file_name)
+}
+
+#read file into dataframe and convert date variable class from factor to date
+activity <- read.csv("activity.csv", header = TRUE, colClasses = c(date = "Date"))
+
+#Take a look at the data structure and summary 
+str(activity)
+
+summary(activity)
+```
+
+The dataset contains 17568 observations and 3 variables with the date variable successfully converted to the date class. From the summary of the data, we will notice that there is 2304 missing data. 
+
+```{r}
+# load libraries for data processing and ploting
+library(dplyr)
+library(ggplot2)
+```
+
+## What is mean total number of steps per day? 
+
+To answer this question, I took the following steps. 
+
+```{r}
+## Aggregate steps by date to get total numbers of steps each day
+steps_day <- aggregate(steps ~ date, data=activity, na.rm=FALSE, FUN = sum)
+
+### Examine the aggregated dataset
+head(steps_day)
+```
+
+Histogram of the total number of steps taken each day
+```{r}
+ggplot(data=steps_day, aes(steps)) + 
+  geom_histogram(fill="orange", col = "black", binwidth=500) +
+  ggtitle("Distribution of Daily Total Number Steps") +
+  xlab("Total Number of Steps per Day") + 
+  ylab("Frequency (Number of Days") 
+```
+
+The mean and median of the total number of steps taken each day are caculated below: 
+```{r}
+step_mean <- mean(steps_day$steps)
+print(step_mean)
+step_median <- median(steps_day$steps)
+print(step_median)
+```
+
+The values of the mean and median are very close. 
+
+## What is the average daily activity pattern? 
+
+```{r}
+# Aggregate steps by 5 minutes interval to get average daily activity pattern
+avg_steps_per_interval <- activity %>% group_by(interval) %>% summarise(avg_steps = mean(steps, na.rm=TRUE))
+```
+
+The pattern is illustrated with the time series plot created below. 
+
+```{r}
+with(avg_steps_per_interval, plot(strptime(sprintf("%04d", interval), format="%H%M"), y=avg_steps, type="l", 
+                                  col = "red", 
+                                  main="Time Series Plot of Steps Taken in 5-Minute Intervals, Average Cross All Days", 
+                                  xlab="Time of Day (HH:MM)", 
+                                  ylab="Average number of steps"))
+abline(h=mean(avg_steps_per_interval$avg_steps, na.rm=TRUE), col="blue")
+```
+
+I referenced the link below to convert the interval from interger to time format (HH:MM).
+<a href="http://stackoverflow.com/questions/25272457/convert-an-integer-column-to-time-hhmm"> this stackoverflow link </a>
+
+The blue line is the mean of the average steps taken per 5 minute interval. 
 
 
-## Loading and preprocessing the data
+### Which 5 minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r}
+## 5-Min interval contains the maximum number of steps
+max_interval <- filter(avg_steps_per_interval, avg_steps == max(avg_steps))
+print(max_interval)
+```
 
+The interval 835(08:35AM-08:40AM) in the most active interval on average.  This result corresponds to the highest peak on the plot above.  We can attribute this peak activity to most people are getting ready to work which might requires a lot of walking.  
 
+### Inputting missing value
 
-## What is mean total number of steps taken per day?
+As there are a number of days/intervals where there are missing values(coded as NA).  The presence of missing days may introduce bias into  calculations or summaries of the data. 
 
+```{r}
+# Calculating the total number of missing values in the dataset
+sum(is.na(activity$steps))
+```
 
+The total number of missing values is 2304. 
 
-## What is the average daily activity pattern?
+To replace the missing value, my strategy is to use the previously calculated average steps per interval value. To do this, I meraged two dataframe (activity, and avg_steps_per_interval). For example, for missing value in a specific interval, I simply used the interval average to replace it,  otherwise, kept the value as is.  Then I recalcuated the steps per day to compare how much it differs from the original result(with NA included). 
 
+```{r}
+## replacing with avg steps per interval calculated in avg_steps_per_interval
+activity.filled  <- inner_join(activity, avg_steps_per_interval, by = "interval") %>%
+    mutate(steps=ifelse(is.na(steps), round(avg_steps), steps)) %>%
+    select(date, steps, interval)
+    
+#Total steps each day after the missing value is filled
+steps_day_filled <- aggregate(steps ~ date, data=activity.filled, FUN=sum)
 
+# Take a look at the data
+head(steps_day_filled)
+summary(steps_day_filled)
+```
 
-## Imputing missing values
+The below is the plot shown the total number of steps taken each day after the missing value is filled. The redline is the mean of the daily average steps taken. 
 
+```{r}
+## Histogram of the total number of steps taken each day after the missing value is filled
+ggplot(data=steps_day_filled, aes(steps))+geom_histogram(fill="orange", col="black", binwidth = 500)+
+  ggtitle("Histogram of Daily Steps (With NA Value Filled)") + xlab("Total steps taken each day") + ylab("Frequency") + geom_vline(aes(xintercept=mean(steps_day_filled$steps)), col = "red", lwd=2)
+```
 
+The mean and median of the total number of steps taken each day after missing value is filled is calcuated below. 
+
+```{r}
+mean(steps_day_filled$steps)
+
+median(steps_day_filled$steps)
+```
+
+After filling the NA value, the mean has not changed much, however, the median is slightly decreased from 10765 to 10762. 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+I did some data manipulation to create a factor variable daytype to indicate whether a day is a weekday or a weekend day. 
+
+```{r}
+# Create a new dataframe what contains a new factor variable daytype
+activity_new <- activity.filled%>%mutate(daytype=as.factor(ifelse(weekdays(date) 
+                        %in% c("Saturday", "Sunday"), "weekend", "weekday")))
+
+head(activity_new)
+
+# Aggregate steps by interval by daytype to compute the average steps per interval by daytype
+activity_new_interval <- aggregate(steps ~ interval + daytype, activity_new, mean)
+names(activity_new_interval)[names(activity_new_interval) == "steps"] <- "avg_steps"
+
+head(activity_new_interval)
+```
+
+Finally, the new average steps taken by interval by daytype is plotted. 
+```{r}
+ggplot(activity_new_interval, aes(interval, avg_steps, color =daytype)) +
+  geom_line() +
+  facet_wrap(~daytype, ncol=1) + 
+  xlab("Intervals") + 
+  ggtitle("Average Daily Steps Weekdays Vs. Weekend") +
+  ylab("Average Steps for 5 Minute Interval")
+
+```
+
+The two plots help us visualize the differences of the activity levels between weekdays and weekends. The several conclusions can be drawn. 
+1. People are more active in the morning, the most active time is between 8:00-10:00.  On week days, the peak is about 8:30 and on weekends, there are two peak times around 8:30 and 9:30. 
+2. People's activity are more spread out on weekends after morning peak with the level of activity not decreasing significantly;  whereas on the weekdays, after morning peak hours, the activity levels reduced significantly for the following hours.  There is another peak at about the 50% level of the peak between 18:30 and 19:00, which can be attributed to activities after working hour. 
+3. There is almost no activity from 0:00 to 5:30AM on weekdays and from 0:00 to 6:00AM on weekends.  For both weekdays and weekends, activity level tappers off after 22:00. 
