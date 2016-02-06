@@ -85,12 +85,12 @@ The values of the mean and median are very close.
 avg_steps_per_interval <- activity %>% group_by(interval) %>% summarise(avg_steps = mean(steps, na.rm=TRUE))
 ```
 
-The pattern is illustrated with the time series plot created below. 
+The pattern is illustrated with the time series plot created below. The blue line is the mean of the average steps taken per 5 minute interval. 
 
 ```{r}
 with(avg_steps_per_interval, plot(strptime(sprintf("%04d", interval), format="%H%M"), y=avg_steps, type="l", 
                                   col = "red", 
-                                  main="Time Series Plot of Steps Taken in 5-Minute Intervals, Average Cross All Days", 
+                                  main="Time Series Plot of Steps Taken in 5-Minute Intervals", 
                                   xlab="Time of Day (HH:MM)", 
                                   ylab="Average number of steps"))
 abline(h=mean(avg_steps_per_interval$avg_steps, na.rm=TRUE), col="blue")
@@ -99,10 +99,9 @@ abline(h=mean(avg_steps_per_interval$avg_steps, na.rm=TRUE), col="blue")
 I referenced the link below to convert the interval from interger to time format (HH:MM).
 <a href="http://stackoverflow.com/questions/25272457/convert-an-integer-column-to-time-hhmm"> this stackoverflow link </a>
 
-The blue line is the mean of the average steps taken per 5 minute interval. 
-
 
 ### Which 5 minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
 ```{r}
 ## 5-Min interval contains the maximum number of steps
 max_interval <- filter(avg_steps_per_interval, avg_steps == max(avg_steps))
@@ -186,6 +185,9 @@ ggplot(activity_new_interval, aes(interval, avg_steps, color =daytype)) +
 ```
 
 The two plots help us visualize the differences of the activity levels between weekdays and weekends. The several conclusions can be drawn. 
-1. People are more active in the morning, the most active time is between 8:00-10:00.  On week days, the peak is about 8:30 and on weekends, there are two peak times around 8:30 and 9:30. 
-2. People's activity are more spread out on weekends after morning peak with the level of activity not decreasing significantly;  whereas on the weekdays, after morning peak hours, the activity levels reduced significantly for the following hours.  There is another peak at about the 50% level of the peak between 18:30 and 19:00, which can be attributed to activities after working hour. 
-3. There is almost no activity from 0:00 to 5:30AM on weekdays and from 0:00 to 6:00AM on weekends.  For both weekdays and weekends, activity level tappers off after 22:00. 
+
+##### 1. People are more active in the morning, the most active time is between 8:00-10:00.  On week days, the peak is about 8:30 and on weekends, there are two peak times around 8:30 and 9:30. 
+
+##### 2. People's activity are more spread out on weekends after morning peak with the level of activity not decreasing significantly;  whereas on the weekdays, after morning peak hours, the activity levels reduced significantly for the following hours.  There is another peak at about the 50% level of the peak between 18:30 and 19:00, which can be attributed to activities after working hour. 
+
+##### 3. There is almost no activity from 0:00 to 5:30AM on weekdays and from 0:00 to 6:00AM on weekends.  For both weekdays and weekends, activity level tappers off after 22:00. 
