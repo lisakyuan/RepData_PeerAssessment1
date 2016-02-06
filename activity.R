@@ -65,11 +65,13 @@ activity_new <- activity.filled%>%mutate(daytype=as.factor(ifelse(weekdays(date)
 
 activity_new_interval <- aggregate(steps ~ interval + daytype, activity_new, mean)
 
+## Set xlim 
+xlim <- as.POSIXct(c("2016-02-05 00:00", "2016-02-06 00:00"), format="%Y-%m-%d %H:%M", tz = "EST")
 ggplot(data=activity_new_interval, aes(strptime(sprintf("%04d", interval), format="%H%M"), steps, color =daytype)) +
   geom_line() +
   facet_wrap(~daytype, ncol=1) + 
   xlab("Hour of Day") + 
   ggtitle("Average Daily Steps Weekdays Vs. Weekend") +
-  scale_x_datetime(labels = date_format("%H%M"), breaks = date_breaks("1 hour")) + 
+  scale_x_datetime(labels = date_format("%H:%M",tz="EST"), breaks = date_breaks("2 hour"), limits=xlim) + 
   scale_y_continuous("Average Steps Taken")
   
