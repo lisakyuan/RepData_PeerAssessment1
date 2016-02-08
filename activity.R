@@ -65,8 +65,8 @@ activity_new <- activity.filled%>%mutate(daytype=as.factor(ifelse(weekdays(date)
 
 activity_new_interval <- aggregate(steps ~ interval + daytype, activity_new, mean)
 
-## Set xlim 
-xlim <- as.POSIXct(c("2016-02-05 00:00", "2016-02-06 00:00"), format="%Y-%m-%d %H:%M", tz = "EST")
+## Set xlim (Have to change the date to reflect today's date and tomorrow's date in order to work, trying to figure out a better solution)
+xlim <- as.POSIXct(c("2016-02-07 00:00", "2016-02-08 00:00"), format="%Y-%m-%d %H:%M", tz = "EST")
 ggplot(data=activity_new_interval, aes(strptime(sprintf("%04d", interval), format="%H%M"), steps, color =daytype)) +
   geom_line() +
   facet_wrap(~daytype, ncol=1) + 
